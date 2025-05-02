@@ -7,6 +7,11 @@ export class Player {
     this.y = this.game.height - this.height - 30;
     this.speed = 5;
     this.color = '#00ff00';
+    this.invincible = false;
+    this.invincibilityTimer = 0;
+    this.invincibilityDuration = 1500; // ms
+    this.blinkInterval = 150; // ms for blinking effect
+    this.visible = true;
   }
   
   update(deltaTime) {
@@ -17,9 +22,30 @@ export class Player {
     if (this.game.keys.right) {
       this.x = Math.min(this.game.width - this.width, this.x + this.speed);
     }
+    
+    // Handle invincibility
+    if (this.invincible) {
+      this.invincibilityTimer += deltaTime;
+      
+      // Blink effect
+      if (this.invincibilityTimer % this.blinkInterval < this.blinkInterval / 2) {
+        this.visible = true;
+      } else {
+        this.visible = false;
+      }
+      
+      // End invincibility
+      if (this.invincibilityTimer >= this.invincibilityDuration) {
+        this.invincible = false;
+        this.visible = true;
+        this.invincibilityTimer = 0;
+      }
+    }
   }
   
   draw() {
+    if (!this.visible) return;
+    
     const ctx = this.game.ctx;
     
     // Draw player ship (cannon base)
@@ -31,6 +57,8 @@ export class Player {
   }
   
   checkCollision(projectile) {
+    if (this.invincible) return false;
+    
     return (
       projectile.x < this.x + this.width &&
       projectile.x + projectile.width > this.x &&
@@ -41,5 +69,8 @@ export class Player {
   
   reset() {
     this.x = this.game.width / 2 - this.width / 2;
+    this.invincible = true;
+    this.invincibilityTimer = 0;
+    this.visible = true;
   }
 }

@@ -14,6 +14,13 @@ body {
   min-width: 320px;
   min-height: 100vh;
   overflow: hidden;
+  background-color: #000;
+  background-image: 
+    radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 40px),
+    radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px),
+    radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 40px);
+  background-size: 550px 550px, 350px 350px, 250px 250px;
+  background-position: 0 0, 40px 60px, 130px 270px;
 }
 
 #app {
@@ -27,6 +34,7 @@ canvas {
   border: 2px solid #00ff00;
   background-color: #000;
   image-rendering: pixelated;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
 }
 
 #ui {
@@ -52,4 +60,176 @@ canvas {
   text-shadow: 0 0 10px #ff0000;
   text-align: center;
   display: none;
+}
+
+#multiplayerUI {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  border: 2px solid #00ff00;
+  padding: 20px;
+  z-index: 100;
+  display: none;
+  color: #00ff00;
+  text-align: center;
+  min-width: 300px;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+}
+
+#multiplayerUI input {
+  background-color: #000;
+  border: 1px solid #00ff00;
+  color: #00ff00;
+  padding: 8px;
+  margin: 10px 0;
+  width: 100%;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+}
+
+#multiplayerUI button {
+  background-color: #000;
+  border: 1px solid #00ff00;
+  color: #00ff00;
+  padding: 8px 16px;
+  margin: 5px;
+  cursor: pointer;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+#multiplayerUI button:hover {
+  background-color: #003300;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.7);
+}
+
+#multiplayerUI h2 {
+  margin-top: 0;
+  color: #00ff00;
+  text-shadow: 0 0 5px #00ff00;
+}
+
+#gamesList {
+  max-height: 200px;
+  overflow-y: auto;
+  margin: 10px 0;
+  border: 1px solid #00ff00;
+  padding: 10px;
+}
+
+.gameItem {
+  border: 1px solid #00ff00;
+  padding: 8px;
+  margin: 5px 0;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.gameItem:hover {
+  background-color: #003300;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.7);
+}
+
+#opponentScore {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: #ff0000;
+  text-shadow: 0 0 5px #ff0000;
+}
+
+#leaderboard {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: rgba(0, 0, 0, 0.7);
+  border: 1px solid #00ff00;
+  padding: 10px;
+  max-width: 200px;
+  max-height: 300px;
+  overflow-y: auto;
+  display: none;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+}
+
+#leaderboard h2 {
+  color: #00ff00;
+  font-size: 16px;
+  margin-top: 0;
+  text-align: center;
+  text-shadow: 0 0 5px #00ff00;
+}
+
+.leaderboardEntry {
+  display: flex;
+  justify-content: space-between;
+  margin: 5px 0;
+  color: #00ff00;
+  padding: 3px;
+  border-bottom: 1px solid rgba(0, 255, 0, 0.3);
+}
+
+#matchResults {
+  margin-top: 20px;
+}
+
+.resultEntry {
+  display: flex;
+  justify-content: space-between;
+  margin: 5px 0;
+  padding: 5px;
+  border-bottom: 1px solid rgba(0, 255, 0, 0.3);
+}
+
+.winner {
+  color: #ffff00;
+  font-weight: bold;
+  text-shadow: 0 0 5px #ffff00;
+}
+
+/* Retro scanline effect */
+#app::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+  background-size: 100% 4px;
+  z-index: 10;
+  pointer-events: none;
+  opacity: 0.15;
+}
+
+/* Retro CRT flicker animation */
+@keyframes flicker {
+  0% { opacity: 0.97; }
+  5% { opacity: 0.95; }
+  10% { opacity: 0.97; }
+  15% { opacity: 0.94; }
+  20% { opacity: 0.98; }
+  25% { opacity: 0.95; }
+  30% { opacity: 0.97; }
+  35% { opacity: 0.96; }
+  40% { opacity: 0.97; }
+  45% { opacity: 0.94; }
+  50% { opacity: 0.98; }
+  55% { opacity: 0.96; }
+  60% { opacity: 0.97; }
+  65% { opacity: 0.95; }
+  70% { opacity: 0.96; }
+  75% { opacity: 0.94; }
+  80% { opacity: 0.98; }
+  85% { opacity: 0.97; }
+  90% { opacity: 0.95; }
+  95% { opacity: 0.96; }
+  100% { opacity: 0.97; }
+}
+
+canvas {
+  animation: flicker 0.3s infinite;
 }

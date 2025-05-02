@@ -5,6 +5,7 @@ import { SoundManager } from './soundManager.js';
 import { Particle } from './particles.js';
 import { Shield } from './shield.js';
 import { UFO } from './ufo.js';
+import { MultiplayerManager } from './multiplayer.js';
 
 export class Game {
   constructor() {
@@ -27,6 +28,7 @@ export class Game {
     this.gameOver = false;
     this.paused = false;
     this.gameStarted = false;
+    this.isMultiplayer = false;
     
     // Game objects
     this.player = new Player(this);
@@ -47,6 +49,9 @@ export class Game {
     // Sound
     this.soundManager = new SoundManager();
     
+    // Multiplayer
+    this.multiplayerManager = new MultiplayerManager(this);
+    
     // Controls
     this.keys = {
       left: false,
@@ -54,8 +59,139 @@ export class Game {
       space: false
     };
     
+    // UI Elements
+    this.createUIElements();
+    
     this.setupEventListeners();
     this.createShields();
+  }
+  
+  createUIElements() {
+    // Create multiplayer UI container
+    this.multiplayerUI = document.createElement('div');
+    this.multiplayerUI.id = 'multiplayerUI';
+    document.getElementById('app').appendChild(this.multiplayerUI);
+    
+    // Create opponent score display
+    this.opponentScoreElement = document.createElement('div');
+    this.opponentScoreElement.id = 'opponentScore';
+    this.opponentScoreElement.style.display = 'none';
+    document.getElementById('ui').appendChild(this.opponentScoreElement);
+    
+    // Create leaderboard container
+    this.leaderboardElement = document.createElement('div');
+    this.leaderboardElement.id = 'leaderboard';
+    this.leaderboardElement.innerHTML = '<h2>Global Leaderboard</h2><div id="leaderboardEntries"></div>';
+    document.getElementById('app').appendChild(this.leaderboardElement);
+    
+    // Style the new elements
+    const style = document.createElement('style');
+    style.textContent = `
+      #multiplayerUI {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: rgba(0, 0, 0, 0.8);
+        border: 2px solid #00ff00;
+        padding: 20px;
+        z-index: 100;
+        display: none;
+        color: #00ff00;
+        text-align: center;
+        min-width: 300px;
+      }
+      
+      #multiplayerUI input {
+        background-color: #000;
+        border: 1px solid #00ff00;
+        color: #00ff00;
+        padding: 8px;
+        margin: 10px 0;
+        width: 100%;
+      }
+      
+      #multiplayerUI button {
+        background-color: #000;
+        border: 1px solid #00ff00;
+        color: #00ff00;
+        padding: 8px 16px;
+        margin: 5px;
+        cursor: pointer;
+      }
+      
+      #multiplayerUI button:hover {
+        background-color: #003300;
+      }
+      
+      #gamesList {
+        max-height: 200px;
+        overflow-y: auto;
+        margin: 10px 0;
+      }
+      
+      .gameItem {
+        border: 1px solid #00ff00;
+        padding: 8px;
+        margin: 5px 0;
+        cursor: pointer;
+      }
+      
+      .gameItem:hover {
+        background-color: #003300;
+      }
+      
+      #opponentScore {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        color: #ff0000;
+      }
+      
+      #leaderboard {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: rgba(0, 0, 0, 0.7);
+        border: 1px solid #00ff00;
+        padding: 10px;
+        max-width: 200px;
+        max-height: 300px;
+        overflow-y: auto;
+        display: none;
+      }
+      
+      #leaderboard h2 {
+        color: #00ff00;
+        font-size: 16px;
+        margin-top: 0;
+        text-align: center;
+      }
+      
+      .leaderboardEntry {
+        display: flex;
+        justify-content: space-between;
+        margin: 5px 0;
+        color: #00ff00;
+      }
+      
+      #matchResults {
+        margin-top: 20px;
+      }
+      
+      .resultEntry {
+        display: flex;
+        justify-content: space-between;
+        margin: 5px 0;
+        padding: 5px;
+      }
+      
+      .winner {
+        color: #ffff00;
+        font-weight: bold;
+      }
+    `;
+    document.head.appendChild(style);
   }
   
   setupEventListeners() {
@@ -66,8 +202,7 @@ export class Game {
       if (e.key === ' ' && !this.keys.space) {
         this.keys.space = true;
         if (!this.gameStarted) {
-          this.gameStarted = true;
-          this.hideMessage();
+          this.showMainMenu();
         } else if (this.gameOver) {
           this.reset();
         } else if (!this.paused) {
@@ -75,6 +210,7 @@ export class Game {
         }
       }
       if (e.key === 'p') this.togglePause();
+      if (e.key === 'l') this.toggleLeaderboard();
     });
     
     window.addEventListener('keyup', (e) => {
@@ -99,6 +235,211 @@ export class Game {
   start() {
     this.showMessage('SPACE INVADERS\\n\\nPRESS SPACE TO START\\n\\nARROW KEYS TO MOVE\\nSPACE TO SHOOT');
     this.animate(0);
+  }
+  
+  showMainMenu() {
+    this.hideMessage();
+    
+    const menuHTML = `
+      <h2>SPACE INVADERS</h2>
+      <button id="singlePlayerBtn">Single Player</button>
+      <button id="multiplayerBtn">Multiplayer</button>
+    `;
+    
+    this.multiplayerUI.innerHTML = menuHTML;
+    this.multiplayerUI.style.display = 'block';
+    
+    document.getElementById('singlePlayerBtn').addEventListener('click', () => {
+      this.startSinglePlayerGame();
+    });
+    
+    document.getElementById('multiplayerBtn').addEventListener('click', () => {
+      this.setupMultiplayer();
+    });
+  }
+  
+  startSinglePlayerGame() {
+    this.multiplayerUI.style.display = 'none';
+    this.gameStarted = true;
+    this.isMultiplayer = false;
+    this.reset();
+  }
+  
+  async setupMultiplayer() {
+    try {
+      // Connect to server
+      await this.multiplayerManager.connect();
+      
+      // Show login screen
+      const loginHTML = `
+        <h2>Enter Your Username</h2>
+        <input type="text" id="usernameInput" placeholder="Username" maxlength="15">
+        <button id="loginBtn">Continue</button>
+      `;
+      
+      this.multiplayerUI.innerHTML = loginHTML;
+      
+      document.getElementById('loginBtn').addEventListener('click', () => {
+        const username = document.getElementById('usernameInput').value.trim();
+        if (username) {
+          this.multiplayerManager.register(username);
+          this.showLobby();
+        }
+      });
+    } catch (error) {
+      this.showMessage('Failed to connect to server. Please try again.', 3000);
+      setTimeout(() => this.showMainMenu(), 3000);
+    }
+  }
+  
+  showLobby() {
+    const lobbyHTML = `
+      <h2>Game Lobby</h2>
+      <button id="createGameBtn">Create New Game</button>
+      <div id="gamesList">
+        <h3>Available Games</h3>
+        <div id="gamesContainer"></div>
+      </div>
+      <button id="refreshBtn">Refresh Games</button>
+      <button id="backBtn">Back to Menu</button>
+    `;
+    
+    this.multiplayerUI.innerHTML = lobbyHTML;
+    
+    document.getElementById('createGameBtn').addEventListener('click', () => {
+      this.multiplayerManager.createGame();
+    });
+    
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      this.updateLobbyUI();
+    });
+    
+    document.getElementById('backBtn').addEventListener('click', () => {
+      this.showMainMenu();
+    });
+    
+    this.updateLobbyUI();
+  }
+  
+  updateLobbyUI() {
+    const gamesContainer = document.getElementById('gamesContainer');
+    if (!gamesContainer) return;
+    
+    if (this.multiplayerManager.availableGames.length === 0) {
+      gamesContainer.innerHTML = '<p>No games available</p>';
+      return;
+    }
+    
+    gamesContainer.innerHTML = '';
+    this.multiplayerManager.availableGames.forEach(game => {
+      const gameElement = document.createElement('div');
+      gameElement.className = 'gameItem';
+      gameElement.innerHTML = `<p>Host: ${game.hostUsername}</p>`;
+      gameElement.addEventListener('click', () => {
+        this.multiplayerManager.joinGame(game.id);
+      });
+      
+      gamesContainer.appendChild(gameElement);
+    });
+  }
+  
+  showWaitingScreen() {
+    const waitingHTML = `
+      <h2>Waiting for Player</h2>
+      <p>Game ID: ${this.multiplayerManager.gameId}</p>
+      <p>Waiting for another player to join...</p>
+      <button id="cancelBtn">Cancel</button>
+    `;
+    
+    this.multiplayerUI.innerHTML = waitingHTML;
+    
+    document.getElementById('cancelBtn').addEventListener('click', () => {
+      this.showLobby();
+    });
+  }
+  
+  showStartButton() {
+    const startHTML = `
+      <h2>Game Ready</h2>
+      <p>Player: ${this.multiplayerManager.opponent.username} has joined</p>
+      <button id="startGameBtn">Start Game</button>
+      <button id="cancelBtn">Cancel</button>
+    `;
+    
+    this.multiplayerUI.innerHTML = startHTML;
+    
+    document.getElementById('startGameBtn').addEventListener('click', () => {
+      this.multiplayerManager.startGame();
+    });
+    
+    document.getElementById('cancelBtn').addEventListener('click', () => {
+      this.showLobby();
+    });
+  }
+  
+  startMultiplayerGame() {
+    this.multiplayerUI.style.display = 'none';
+    this.gameStarted = true;
+    this.isMultiplayer = true;
+    this.reset();
+    
+    // Show opponent score
+    this.opponentScoreElement.textContent = `Opponent: 0`;
+    this.opponentScoreElement.style.display = 'block';
+  }
+  
+  updateOpponentScore(score) {
+    if (this.opponentScoreElement) {
+      this.opponentScoreElement.textContent = `Opponent: ${score}`;
+    }
+  }
+  
+  showMatchResults(players) {
+    const resultsHTML = `
+      <h2>Match Results</h2>
+      <div id="matchResults">
+        ${players.map((player, index) => `
+          <div class="resultEntry ${index === 0 ? 'winner' : ''}">
+            <span>${player.username}</span>
+            <span>${player.score}</span>
+          </div>
+        `).join('')}
+      </div>
+      <button id="backToLobbyBtn">Back to Lobby</button>
+    `;
+    
+    this.multiplayerUI.innerHTML = resultsHTML;
+    this.multiplayerUI.style.display = 'block';
+    
+    document.getElementById('backToLobbyBtn').addEventListener('click', () => {
+      this.showLobby();
+    });
+  }
+  
+  updateLeaderboardUI() {
+    const leaderboardEntries = document.getElementById('leaderboardEntries');
+    if (!leaderboardEntries) return;
+    
+    leaderboardEntries.innerHTML = '';
+    
+    this.multiplayerManager.leaderboard.forEach((entry, index) => {
+      const entryElement = document.createElement('div');
+      entryElement.className = 'leaderboardEntry';
+      entryElement.innerHTML = `
+        <span>${index + 1}. ${entry.username}</span>
+        <span>${entry.score}</span>
+      `;
+      
+      leaderboardEntries.appendChild(entryElement);
+    });
+  }
+  
+  toggleLeaderboard() {
+    if (this.leaderboardElement.style.display === 'none' || !this.leaderboardElement.style.display) {
+      this.leaderboardElement.style.display = 'block';
+    } else {
+      this.leaderboardElement.style.display = 'none';
+    }
   }
   
   animate(timeStamp) {
@@ -126,6 +467,10 @@ export class Game {
       this.gameOver = true;
       this.showMessage('GAME OVER\\n\\nPRESS SPACE TO RESTART');
       this.soundManager.play('gameOver');
+      
+      if (this.isMultiplayer) {
+        this.multiplayerManager.gameOver(this.score);
+      }
     }
     
     // Update UFO
@@ -160,6 +505,11 @@ export class Game {
     // Check if all enemies are defeated
     if (this.enemyGrid.isEmpty()) {
       this.nextLevel();
+    }
+    
+    // Update multiplayer score
+    if (this.isMultiplayer) {
+      this.multiplayerManager.updateScore(this.score);
     }
   }
   
@@ -254,6 +604,10 @@ export class Game {
       this.gameOver = true;
       this.showMessage('GAME OVER\\n\\nPRESS SPACE TO RESTART');
       this.soundManager.play('gameOver');
+      
+      if (this.isMultiplayer) {
+        this.multiplayerManager.gameOver(this.score);
+      }
     } else {
       // Reset player position
       this.player.reset();
